@@ -44,7 +44,7 @@ switch (dbType) {
   case 'sqlite':
     dataSourceConfig = {
       type: 'sqlite' as const,
-      database: process.env.DB_NAME || './data/db.sqlite',
+      database: process.env.DB_NAME || './data/dev.db',
       synchronize: process.env.DB_SYNCHRONIZE !== 'false',
       logging: process.env.DB_LOGGING === 'true',
       entities: [__dirname + '/../**/*.entity{.ts,.js}'],

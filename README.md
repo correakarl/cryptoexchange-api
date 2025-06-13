@@ -57,6 +57,21 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## 📚 Documentación de la API
+
+La documentación de la API está disponible a través de Swagger UI:
+
+1. Inicia la aplicación: `npm run start`
+2. Accede a: [http://localhost:3000/docs](http://localhost:3000/docs)
+
+### Autenticación JWT
+
+Para probar endpoints protegidos:
+1. Usa el botón "Authorize" en la interfaz de Swagger.
+2. Ingresa el token JWT obtenido desde `/auth/login` como `Bearer <token>`.
+
+
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
