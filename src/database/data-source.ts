@@ -1,74 +1,107 @@
-import { DataSource } from 'typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { config } from 'dotenv';
+import * as path from 'path';
 
 config();
 
-// Tipos compatibles con TypeORM
-type DatabaseType = 'mysql' | 'mariadb' | 'postgres' | 'cockroachdb' | 'sqlite' | 'mssql';
+const configService = new ConfigService();
 
-const dbType = (process.env.DB_TYPE as DatabaseType) || 'sqlite';
+// Configuración base común para todos los tipos de DB
+const baseConfig: Partial<DataSourceOptions> = {
+  entities: [path.join(__dirname, '/../**/*.entity{.ts,.js}')],
+  synchronize: configService.get<string>('NODE_ENV') !== 'production',
+  logging: configService.get<string>('NODE_ENV') === 'development',
+  migrations: [path.join(__dirname, '/migrations/*{.ts,.js}')],
+  migrationsTableName: 'typeorm_migrations',
+};
 
-let dataSourceConfig;
+// Configuración específica por tipo de base de datos
+const getDatabaseConfig = (): DataSourceOptions => {
+  const dbType = configService.get<string>('DB_TYPE', 'sqlite').toLowerCase();
 
-switch (dbType) {
-  case 'postgres':
-    dataSourceConfig = {
-      type: 'postgres' as const,
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432'),
-      username: process.env.DB_USERNAME || 'postgres',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'crypto_db',
-      synchronize: process.env.DB_SYNCHRONIZE !== 'false',
-      logging: process.env.DB_LOGGING === 'true',
-      entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-      migrations: [__dirname + '/../database/migrations/**/*{.ts,.js}'],
-    };
-    break;
+  switch (dbType) {
+    case 'postgres':
+      return {
+        type: 'postgres',
+        host: configService.get<string>('DB_HOST', 'localhost'),
+        port: configService.get<number>('DB_PORT', 5432),
+        username: configService.get<string>('DB_USERNAME', 'postgres'),
+        password: configService.get<string>('DB_PASSWORD', 'postgres'),
+        database: configService.get<string>('DB_NAME', 'ecommerce_kc'),
+        ...baseConfig,
+      } as DataSourceOptions;
 
-  case 'mysql':
-    dataSourceConfig = {
-      type: 'mysql' as const,
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '3306'),
-      username: process.env.DB_USERNAME || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'crypto_db',
-      synchronize: process.env.DB_SYNCHRONIZE !== 'false',
-      logging: process.env.DB_LOGGING === 'true',
-      entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-      migrations: [__dirname + '/../database/migrations/**/*{.ts,.js}'],
-    };
-    break;
+    case 'mysql':
+    case 'mariadb':
+      return {
+        type: dbType as 'mysql' | 'mariadb',
+        host: configService.get<string>('DB_HOST', 'localhost'),
+        port: configService.get<number>('DB_PORT', 3306),
+        username: configService.get<string>('DB_USERNAME', 'root'),
+        password: configService.get<string>('DB_PASSWORD', ''),
+        database: configService.get<string>('DB_NAME', 'ecommerce_kc'),
+        ...baseConfig,
+      } as DataSourceOptions;
 
-  case 'sqlite':
-    dataSourceConfig = {
-      type: 'sqlite' as const,
-      database: process.env.DB_NAME || './data/dev.db',
-      synchronize: process.env.DB_SYNCHRONIZE !== 'false',
-      logging: process.env.DB_LOGGING === 'true',
-      entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-      migrations: [__dirname + '/../database/migrations/**/*{.ts,.js}'],
-    };
-    break;
+    case 'mssql':
+      return {
+        type: 'mssql',
+        host: configService.get<string>('DB_HOST', 'localhost'),
+        port: configService.get<number>('DB_PORT', 1433),
+        username: configService.get<string>('DB_USERNAME', 'sa'),
+        password: configService.get<string>('DB_PASSWORD', ''),
+        database: configService.get<string>('DB_NAME', 'ecommerce_kc'),
+        options: {
+          encrypt: true, // para Azure
+          trustServerCertificate: true, // opcional
+        },
+        ...baseConfig,
+      } as DataSourceOptions;
 
-  case 'mssql':
-    dataSourceConfig = {
-      type: 'mssql' as const,
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '1433'),
-      username: process.env.DB_USERNAME || 'sa',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'crypto_db',
-      synchronize: process.env.DB_SYNCHRONIZE !== 'false',
-      logging: process.env.DB_LOGGING === 'true',
-      entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-      migrations: [__dirname + '/../database/migrations/**/*{.ts,.js}'],
-    };
-    break;
+    case 'oracle':
+      return {
+        type: 'oracle',
+        connectString: configService.get<string>('DB_CONNECT_STRING', 'localhost/XE'),
+        username: configService.get<string>('DB_USERNAME', 'system'),
+        password: configService.get<string>('DB_PASSWORD', 'oracle'),
+        ...baseConfig,
+      } as DataSourceOptions;
 
-  default:
-    throw new Error(`Unsupported database type: ${dbType}`);
-}
+    case 'sqlserver':
+      return {
+        type: 'sqlserver',
+        host: configService.get<string>('DB_HOST', 'localhost'),
+        port: configService.get<number>('DB_PORT', 1433),
+        username: configService.get<string>('DB_USERNAME', 'sa'),
+        password: configService.get<string>('DB_PASSWORD', ''),
+        database: configService.get<string>('DB_NAME', 'ecommerce_kc'),
+        ...baseConfig,
+      } as DataSourceOptions;
 
-export const AppDataSource = new DataSource(dataSourceConfig);
+    case 'mongodb':
+      return {
+        type: 'mongodb',
+        host: configService.get<string>('DB_HOST', 'localhost'),
+        port: configService.get<number>('DB_PORT', 27017),
+        username: configService.get<string>('DB_USERNAME', ''),
+        password: configService.get<string>('DB_PASSWORD', ''),
+        database: configService.get<string>('DB_NAME', 'ecommerce_kc'),
+        ...baseConfig,
+      } as DataSourceOptions;
+
+
+    case 'sqlite':
+    default:
+      return {
+        type: 'sqlite',
+        database: configService.get<string>('DB_PATH', './ecommerce.db'),
+        ...baseConfig,
+      } as DataSourceOptions;
+  }
+};
+
+export const dataSourceOptions: DataSourceOptions = getDatabaseConfig();
+
+const dataSource = new DataSource(dataSourceOptions);
+export default dataSource;

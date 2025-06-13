@@ -1,19 +1,26 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-// import { AuthModule } from './auth/auth.module';
-// import { CurrencyModule } from './currency/currency.module';
-// import { CryptoModule } from './cryptocurrency/crypto.module';
-// import { HistoricalModule } from './historical/historical.module';
-import {DatabaseModule}  from './database/database.module';
+import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { DatabaseModule } from './database/database.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { JwtAuthAuthGuard } from './modules/auth/strategies/jwt-auth.guard';
+
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: `.env`,
+    }),
     DatabaseModule,
-    // TypeOrmModule.forRoot(typeOrmConfig()),
-    // AuthModule,
-    // CurrencyModule,
-    // CryptoModule,
-    // HistoricalModule,
+    AuthModule,    // Proporciona servicios de autenticación
   ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthAuthGuard,
+    },
+  ],
+
 })
-export class AppModule {}
+export class AppModule { }

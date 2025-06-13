@@ -2,11 +2,21 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log', 'debug', 'verbose'] });
+  const configService = app.get(ConfigService);
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true })); // Configuración de validación global
+  // Configuración global de validación
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   // Configuración de Swagger
   const config = new DocumentBuilder()
@@ -25,6 +35,17 @@ async function bootstrap() {
     swaggerOptions: {
       persistAuthorization: true, // Mantiene el token JWT entre recargas
     },
+  });
+
+  // Configuración de tamaño máximo de payload
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ extended: true, limit: '10mb' }));
+
+  // Habilitar CORS para desarrollo
+  app.enableCors({
+    origin: configService.get('CORS_ORIGIN', '*'),
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
   });
 
   // Puerto dinámico o por defecto 3000
