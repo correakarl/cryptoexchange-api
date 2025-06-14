@@ -1,62 +1,41 @@
+// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import { json, urlencoded } from 'express';
+import { ValidationPipe } from '@nestjs/common';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log', 'debug', 'verbose'] });
+  const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  // Configuración global de validación
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  // Configuración global
+  const globalPrefix = configService.get<string>('config.app.globalPrefix', 'api');
+  app.setGlobalPrefix(globalPrefix);
+  app.use(cookieParser());
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  // Configuración de Swagger
-  const config = new DocumentBuilder()
-    .setTitle('CryptoExchange API')
-    .setDescription('API para gestión de criptomonedas y monedas fiduciarias')
-    .setVersion('1.0')
-    .addTag('auth', 'Autenticación de usuarios')
-    .addTag('currency', 'Gestión de monedas fiduciarias')
-    .addTag('cryptocurrency', 'Gestión de criptomonedas')
-    .addTag('historical', 'Datos históricos')
-    .addBearerAuth() // Agrega soporte para JWT en la UI
-    .build();
+  // Configuración Swagger
+  if (configService.get<boolean>('config.swagger.enabled', true)) {
+    const config = new DocumentBuilder()
+      .setTitle(configService.get<string>('config.swagger.title', 'API Documentation'))
+      .setDescription(configService.get<string>('config.swagger.description', 'API description'))
+      .setVersion(configService.get<string>('config.swagger.version', '1.0'))
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    const swaggerPath = configService.get<string>('config.swagger.path', 'docs');
+    SwaggerModule.setup(swaggerPath, app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+    });
+  }
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true, // Mantiene el token JWT entre recargas
-    },
-  });
-
-  // Configuración de tamaño máximo de payload
-  app.use(json({ limit: '10mb' }));
-  app.use(urlencoded({ extended: true, limit: '10mb' }));
-
-  // Habilitar CORS para desarrollo
-  app.enableCors({
-    origin: configService.get('CORS_ORIGIN', '*'),
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
-
-  // Puerto dinámico o por defecto 3000
-  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
-  // Inicia el servidor
+  const port = configService.get<number>('config.app.port', 3000);
   await app.listen(port);
-
-  // Obtiene la URL completa donde está escuchando
-  const url = await app.getUrl();
-  console.log(`✅ Servidor corriendo en: ${url}`);
-  console.log(`📄 Documentación disponible en: ${url}/docs`);
-
+  console.log(`Application is running on: ${await app.getUrl()}/${globalPrefix}`);
+  console.log(`Swagger docs available at: ${await app.getUrl()}/${configService.get<string>('config.swagger.path', 'docs')}`);
 }
 bootstrap();

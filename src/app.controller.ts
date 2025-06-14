@@ -1,24 +1,20 @@
+// src/app.controller.ts
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiExcludeController } from '@nestjs/swagger';
 
+@ApiExcludeController() // Excluir de Swagger
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) { }
+  constructor(private readonly appService: AppService) {}
 
   @Get()
-  @ApiTags('root')
-  @ApiOperation({ summary: 'Verificar estado del servidor' })
-  @ApiResponse({ status: 200, description: 'Servidor activo' })
   getHello(): string {
-    return 'Servidor funcionando!';
+    return this.appService.getHello();
   }
 
   @Get('health')
-  @ApiTags('health')
-  @ApiOperation({ summary: 'Verificar estado del servidor' })
-  @ApiResponse({ status: 200, description: 'Servidor activo' })
-  healthCheck() {
-    return { status: 'ok', timestamp: new Date().toISOString() };
+  healthCheck(): { status: string } {
+    return this.appService.healthCheck();
   }
 }

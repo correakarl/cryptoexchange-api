@@ -1,26 +1,27 @@
+// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
-import { DatabaseModule } from './database/database.module';
+import { DatabaseModule } from './core/database/database.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import configuration from './core/config/configuration';
 import { AuthModule } from './modules/auth/auth.module';
-import { JwtAuthAuthGuard } from './modules/auth/strategies/jwt-auth.guard';
-
+import { CurrenciesModule } from './modules/currencies/currencies.module';
+import { CryptocurrenciesModule } from './modules/cryptocurrencies/cryptocurrencies.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: `.env`,
+      envFilePath: '.env',
+      load: [configuration],
     }),
-    DatabaseModule,
-    AuthModule,    // Proporciona servicios de autenticación
+    DatabaseModule.forRoot(),
+    AuthModule,
+    CurrenciesModule,
+    CryptocurrenciesModule,
   ],
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthAuthGuard,
-    },
-  ],
-
+  controllers: [AppController],
+  providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
