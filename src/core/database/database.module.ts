@@ -1,4 +1,3 @@
-// src/core/database/database.module.ts
 import { DynamicModule, Module, Provider } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -11,7 +10,15 @@ export class DatabaseModule {
       provide: DataSource,
       useFactory: async () => {
         const dataSource = new DataSource(dataSourceOptions);
-        return await dataSource.initialize();
+        console.log('Initializing Data Source with options:', dataSourceOptions);
+        try {
+          const initializedDataSource = await dataSource.initialize();
+          console.log('Data Source has been initialized!');
+          return initializedDataSource;
+        } catch (error) {
+          console.error('Error initializing Data Source:', error);
+          throw error;
+        }
       },
     };
 
@@ -19,10 +26,16 @@ export class DatabaseModule {
       module: DatabaseModule,
       imports: [
         TypeOrmModule.forRootAsync({
-          useFactory: async () => ({
-            ...dataSourceOptions,
-            autoLoadEntities: true,
-          }),
+          useFactory: async () => {
+            console.log('TypeORM Module loading with options:', {
+              ...dataSourceOptions,
+              autoLoadEntities: true,
+            });
+            return {
+              ...dataSourceOptions,
+              autoLoadEntities: true,
+            };
+          },
         }),
       ],
       providers: [dataSourceProvider],

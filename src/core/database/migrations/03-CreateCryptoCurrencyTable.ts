@@ -36,12 +36,18 @@ export class CreateCryptocurrencyTable implements MigrationInterface {
           },
           {
             name: "createdAt",
-            type: "datetime",
+            type:
+              process.env.DB_TYPE === 'postgres'
+                ? 'timestamp with time zone'
+                : 'datetime',
             default: "CURRENT_TIMESTAMP",
           },
           {
             name: "updatedAt",
-            type: "datetime",
+            type:
+              process.env.DB_TYPE === 'postgres'
+                ? 'timestamp with time zone'
+                : 'datetime',
             default: "CURRENT_TIMESTAMP",
             onUpdate: "CURRENT_TIMESTAMP",
           },

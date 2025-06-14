@@ -11,7 +11,10 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   // Configuración global
-  const globalPrefix = configService.get<string>('config.app.globalPrefix', 'api');
+  const globalPrefix = configService.get<string>(
+    'config.app.globalPrefix',
+    'api',
+  );
   app.setGlobalPrefix(globalPrefix);
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
@@ -19,13 +22,24 @@ async function bootstrap() {
   // Configuración Swagger
   if (configService.get<boolean>('config.swagger.enabled', true)) {
     const config = new DocumentBuilder()
-      .setTitle(configService.get<string>('config.swagger.title', 'API Documentation'))
-      .setDescription(configService.get<string>('config.swagger.description', 'API description'))
+      .setTitle(
+        configService.get<string>('config.swagger.title', 'API Documentation'),
+      )
+      .setDescription('Incluye sistema de replicación histórica')
+      .setDescription(
+        configService.get<string>(
+          'config.swagger.description',
+          'API description',
+        ),
+      )
       .setVersion(configService.get<string>('config.swagger.version', '1.0'))
       .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, config);
-    const swaggerPath = configService.get<string>('config.swagger.path', 'docs');
+    const swaggerPath = configService.get<string>(
+      'config.swagger.path',
+      'docs',
+    );
     SwaggerModule.setup(swaggerPath, app, document, {
       swaggerOptions: {
         persistAuthorization: true,
@@ -35,7 +49,11 @@ async function bootstrap() {
 
   const port = configService.get<number>('config.app.port', 3000);
   await app.listen(port);
-  console.log(`Application is running on: ${await app.getUrl()}/${globalPrefix}`);
-  console.log(`Swagger docs available at: ${await app.getUrl()}/${configService.get<string>('config.swagger.path', 'docs')}`);
+  console.log(
+    `Application is running on: ${await app.getUrl()}/${globalPrefix}`,
+  );
+  console.log(
+    `Swagger docs available at: ${await app.getUrl()}/${configService.get<string>('config.swagger.path', 'docs')}`,
+  );
 }
 bootstrap();

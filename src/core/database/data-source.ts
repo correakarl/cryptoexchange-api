@@ -4,13 +4,14 @@ import { ConfigService } from '@nestjs/config';
 import { config } from 'dotenv';
 import * as path from 'path';
 
-config();
+config({ path: path.resolve(__dirname, '../../../.env') });
 
 const configService = new ConfigService();
 
 // Validación del tipo de base de datos
 const getValidDatabaseType = (): any => {
-  const dbType = configService.get<string>('DB_TYPE', 'sqlite').toLowerCase();
+  const dbType = configService.get<string>('DB_TYPE', '').toLowerCase();
+  console.log('Database type:',dbType)
   const validDrivers = [
     'aurora-mysql', 'aurora-postgres', 'better-sqlite3', 'capacitor', 
     'cockroachdb', 'cordova', 'expo', 'mariadb', 'mongodb', 'mssql', 

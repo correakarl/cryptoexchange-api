@@ -13,6 +13,6 @@ import { CurrenciesModule } from '../currencies/currencies.module';
   ],
   controllers: [CryptocurrenciesController],
   providers: [CryptocurrenciesService],
-  exports: [CryptocurrenciesService],
+  exports: [TypeOrmModule,CryptocurrenciesService],
 })
 export class CryptocurrenciesModule {}
