@@ -10,8 +10,8 @@ erDiagram
     CURRENCY ||--o{ CURRENCY_HISTORY : "1-n"
     CRYPTOCURRENCY ||--o{ CRYPTOCURRENCY_HISTORY : "1-n"
 
-    USER {
-        uuid id PK
+USER {
+        string id PK "UUID"
         string email UK
         string password
         datetime createdAt
@@ -19,8 +19,8 @@ erDiagram
     }
 
     CURRENCY {
-        uuid id PK
-        string(3) code UK
+        string id PK "UUID"
+        string code UK "3 chars"
         string name
         string symbol
         datetime createdAt
@@ -28,18 +28,18 @@ erDiagram
     }
 
     CRYPTOCURRENCY {
-        uuid id PK
+        string id PK "UUID"
         string code UK
         string name
-        decimal(18,8) currentPrice
-        uuid currencyId FK
+        decimal currentPrice "decimal(18,8)"
+        string currencyId FK
         datetime createdAt
         datetime updatedAt
     }
 
     CURRENCY_HISTORY {
-        uuid id PK
-        uuid originalId
+        string id PK "UUID"
+        string originalId
         string code
         string name
         string symbol
@@ -48,11 +48,11 @@ erDiagram
     }
 
     CRYPTOCURRENCY_HISTORY {
-        uuid id PK
-        uuid originalId
+        string id PK "UUID"
+        string originalId
         string code
         string name
-        decimal(18,8) price
+        decimal price "decimal(18,8)"
         string currencyCode
         datetime validFrom
         datetime validTo
@@ -132,3 +132,64 @@ CREATE TABLE "cryptocurrency_history" (
   FOREIGN KEY ("originalId") REFERENCES "cryptocurrency" ("id")
 );
 ```
+
+
+### Relaciones Clave
+
+# User-Currency:
+
+Un usuario puede crear múltiples monedas fiduciarias
+
+Relación implementada a nivel de aplicación (no FK en BD)
+
+# Currency-Cryptocurrency:
+
+Una moneda fiduciaria puede tener múltiples criptomonedas asociadas
+
+Relación 1-n con FK en cryptocurrency.currencyId
+
+# Históricos:
+
+Cada tabla principal tiene su tabla histórica
+
+Relación por originalId que apunta al registro original
+
+Campos validFrom y validTo para control de versiones
+
+
+
+### Indices clave
+```
+-- Índices para currency
+CREATE INDEX "IDX_CURRENCY_CODE" ON "currency" ("code");
+
+-- Índices para cryptocurrency
+CREATE INDEX "IDX_CRYPTO_CODE" ON "cryptocurrency" ("code");
+CREATE INDEX "IDX_CRYPTO_CURRENCY" ON "cryptocurrency" ("currencyId");
+
+-- Índices para históricos
+CREATE INDEX "IDX_CURRENCY_HISTORY_ORIGINAL" ON "currency_history" ("originalId");
+CREATE INDEX "IDX_CRYPTO_HISTORY_ORIGINAL" ON "crypto_history" ("originalId");
+CREATE INDEX "IDX_HISTORY_VALIDITY" ON "crypto_history" ("validFrom", "validTo");
+```
+
+### Políticas de Datos
+
+
+# Eliminación:
+
+Eliminar una currency elimina en cascada sus cryptocurrency
+
+Los históricos se mantienen con originalId apuntando a registros eliminados
+
+# Replicación:
+
+Datos se copian a tablas históricas diariamente
+
+Registros históricos nunca se eliminan (sólo se marcan con validTo)
+
+# Integridad:
+
+Restricciones UNIQUE en códigos de moneda y criptomoneda
+
+Todas las relaciones con integridad referencial
